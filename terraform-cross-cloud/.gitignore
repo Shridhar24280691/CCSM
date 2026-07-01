@@ -1,0 +1,25 @@
+﻿# Virtual environment
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated results (too large / not source code)
+results/
+
+# Terraform executables (too large for GitHub)
+tools/terraform.exe
+tools/tfsec.exe
+tools/checkov.exe
+
+# Terraform working files
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Windows
+Thumbs.db
+desktop.ini
