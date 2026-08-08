@@ -1,9 +1,7 @@
 # main.py
 # Runs the CCSM scanner on every test file in both test groups
 # and prints plus saves all the findings.
-#
 # This works no matter which folder you run "python main.py" from,
-# because it locates folders using this file's own location on disk.
 
 import sys
 import os
