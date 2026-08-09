@@ -79,19 +79,17 @@ def check_single_resource(resource):
 
 
 def check_cross_cloud(aws_list, azure_list):
-    """
-    Compare AWS and Azure resources for security policy inconsistencies.
+    # Compare AWS and Azure resources for security policy inconsistencies.
 
-    THIS IS THE NOVEL CONTRIBUTION.
-    Checkov and tfsec cannot do this because they have no shared model.
-    This function only works because the normaliser already converted
-    both clouds into the same attribute names.
+    # THIS IS THE NOVEL CONTRIBUTION.
+    # Checkov and tfsec cannot do this because they have no shared model.
+    # This function only works because the normaliser already converted both clouds into the same attribute names.
 
-    Severity levels for cross-cloud checks:
-      HIGH   - public access gap (data exposed to the internet)
-      MEDIUM - versioning gap (inconsistent data protection)
-      LOW    - logging gap (inconsistent audit trail)
-    """
+    # Severity levels for cross-cloud checks:
+    #  HIGH   - public access gap (data exposed to the internet)
+    #  MEDIUM - versioning gap (inconsistent data protection)
+    #  LOW    - logging gap (inconsistent audit trail)
+
     findings = [] # Initialises an empty list to hold cross-cloud findings.
 
     aws_versioning   = any(r["attributes"]["versioning_enabled"] for r in aws_list) # Computes a boolean: True if ANY AWS resource has versioning enabled.
@@ -127,13 +125,13 @@ def check_cross_cloud(aws_list, azure_list):
             "recommendation": fix
         })
 
-    # Type 2: Cross-cloud check 2: Logging gap (LOW) ──────────────
+    # Type 2: Cross-cloud check 2: Logging gap (LOW)
     if aws_logging != azure_logging: # Checks whether logging enablement differs between AWS and Azure.
         if aws_logging and not azure_logging: # Case: logging is enabled on AWS but not on Azure.
             problem = (
                 "Logging is enabled on AWS but not on Azure. "
                 "A single-cloud tool cannot detect this gap."
-            )# Describes the inconsistency and limitation of single-cloud tools.
+            ) # Describes the inconsistency and limitation of single-cloud tools.
             fix = "Enable logging in blob_properties on Azure storage account."
         else: # Case: logging enabled on Azure but not on AWS.
             problem = (
@@ -151,7 +149,7 @@ def check_cross_cloud(aws_list, azure_list):
             "recommendation": fix
         })
 
-    # ── Cross-cloud check 3: Public access gap (HIGH) ───────
+    # Cross-cloud check 3: Public access gap (HIGH)
     if aws_public_blocked != azure_public_blocked: # Checks whether public access blocking differs between AWS and Azure.
         if aws_public_blocked and not azure_public_blocked: # Case: public access is blocked on AWS but not on Azure.
             problem = ( 

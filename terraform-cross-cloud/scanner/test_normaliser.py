@@ -16,7 +16,7 @@ def separator(title):
     print("=" * 60)
 
 
-# ── Step 1: Show raw parser output ──────────────────────────
+# Step 1: Show raw parser output
 separator("RAW PARSER OUTPUT (provider-specific, not comparable)")
 raw = parse_directory(TEST_DIR)
 
@@ -33,7 +33,7 @@ for resource_type, instances in raw.items():
             print(f"  raw keys      : {list(config.keys())}")
 
 
-# ── Step 2: Show normalised output ──────────────────────────
+# Step 2: Show normalised output
 separator("NORMALISED OUTPUT (unified model — same keys for AWS and Azure)")
 normalised = normalise(raw)
 
@@ -46,7 +46,7 @@ for resource in normalised:
         print(f"    {k:<25} = {v}")
 
 
-# ── Step 3: Show what cross-cloud comparison is now possible ─
+# Step 3: Show what cross-cloud comparison is now possible
 separator("WHAT CROSS-CLOUD COMPARISON IS NOW POSSIBLE")
 # With the normalised output, we can now directly compare attributes across clouds.
 aws   = [r for r in normalised if r["provider"] == "aws"]

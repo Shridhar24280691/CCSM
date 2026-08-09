@@ -1,21 +1,6 @@
 # normaliser.py
 # Converts AWS and Azure Terraform resources into a single common format
 
-''' Algorithm for normalising storage resources:
-1. Go through every resource the parser found
-2. If it is an AWS S3 bucket:
-   a. Look up its public access block (a separate resource)
-   b. Look up its versioning setting (another separate resource)
-   c. Look up its logging setting (another separate resource)
-   d. Combine all of these into one summary card
-3. If it is an Azure storage account:
-   a. Read the public access settings from the resource itself
-   b. Read the versioning setting from inside blob_properties
-   c. Read the logging setting from inside blob_properties
-   d. Combine all of these into one summary card
-4. Every summary card has the SAME four keys regardless of provider
-5. Return all the summary cards in a list
-'''
 
 def normalise(resources):
     # Start with empty list — we will add one card per storage resource
@@ -68,7 +53,7 @@ def normalise_aws(name, resources):
     versioning_enabled = False
     logging_enabled = False
 
-    # --- CHECK PUBLIC ACCESS ---
+    # CHECK PUBLIC ACCESS 
     # AWS stores public access settings in a separate resource
     public_blocks = resources.get("aws_s3_bucket_public_access_block", {})
 
@@ -82,7 +67,7 @@ def normalise_aws(name, resources):
                 and to_bool(block.get("restrict_public_buckets"))
             )
 
-    # --- CHECK VERSIONING ---
+    # CHECK VERSIONING
     # AWS stores versioning in a separate resource
     versioning_resources = resources.get("aws_s3_bucket_versioning", {})
 
@@ -98,7 +83,7 @@ def normalise_aws(name, resources):
             # Versioning is enabled only if status says "Enabled"
             versioning_enabled = str(status).lower() == "enabled"
 
-    # --- CHECK LOGGING ---
+    # CHECK LOGGING
     # AWS stores logging in a separate resource
     logging_resources = resources.get("aws_s3_bucket_logging", {})
 
@@ -122,7 +107,7 @@ def normalise_aws(name, resources):
 
 
 def normalise_azure(name, config):
-    # --- CHECK PUBLIC ACCESS ---
+    # CHECK PUBLIC ACCESS
     # Azure uses two settings to control public access
     # Default is True (public allowed) — safest assumption if not specified
     allow_public = config.get("allow_nested_items_to_be_public", True)
@@ -134,19 +119,19 @@ def normalise_azure(name, config):
         and not to_bool(network_access)
     )
 
-    # --- GET BLOB PROPERTIES SECTION ---
+    # CHECK BLOB PROPERTIES
     # All blob settings (versioning, logging) live inside blob_properties
     # Use first_item because hcl2 may wrap it in a list
     blob = first_item(config.get("blob_properties", {}))
 
-    # --- CHECK VERSIONING ---
+    # CHECK VERSIONING
     versioning_enabled = to_bool(blob.get("versioning_enabled", False))
 
-    # --- CHECK LOGGING ---
+    # CHECK LOGGING
     # If the logging block exists and has content, logging is ON
     logging_enabled = bool(blob.get("logging"))
 
-    # --- CHECK TLS VERSION ---
+    # CHECK TLS VERSION
     tls_min_version = config.get("min_tls_version", "TLS1_2")
 
     # Return the Azure summary card in the unified format

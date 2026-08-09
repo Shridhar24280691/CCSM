@@ -53,11 +53,6 @@ def parse_directory(directory):
         # Get the resource list from this file
         resource_list = raw.get("resource", [])
 
-        ''' Example from the resource list in the raw output of a file might look like this:
-        [
-            {"aws_s3_bucket": {"app_data": {"bucket": ["my-bucket"]}}},
-            {"aws_s3_bucket_public_access_block": {"app_data": {"block_public_acls": [True]}}}
-        ]'''
 
         # Loop through each item in the list
         for block in resource_list:
