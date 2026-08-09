@@ -5,10 +5,7 @@ import csv
 
 
 def print_report(findings, directory):
-    """
-    Print all findings to the terminal in a clean format.
-    Groups findings by severity so the most serious ones appear first.
-    """
+    # Print all findings to the terminal in a clean format. Groups findings by severity so the most serious ones appear first.
     print("\n" + "=" * 65)
     print(f"  CCSM Scanner Results — {directory}")
     print("=" * 65)
@@ -49,10 +46,7 @@ def print_report(findings, directory):
 
 
 def save_csv(findings, output_path):
-    """
-    Save findings to a CSV file.
-    This is used to build the comparison table in your dissertation.
-    """
+    # Save findings to a CSV file. This is used to build the comparison table in your dissertation.
     with open(output_path, "w", newline="") as file:
         writer = csv.DictWriter(
             file,

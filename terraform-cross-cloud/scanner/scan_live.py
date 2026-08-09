@@ -37,12 +37,12 @@ from detector   import detect
 
 def run_ccsm():
     print("  Running CCSM scanner...")
-    resources  = parse_file(str(LIVE_FILE))
-    normalised = normalise(resources)
-    findings   = detect(normalised)
+    resources  = parse_file(str(LIVE_FILE)) # Parses the live Terraform file into a structured representation of resources.
+    normalised = normalise(resources) # Normalises the parsed resources for consistent processing.
+    findings   = detect(normalised) # Detects issues in the normalised resources.
 
-    single     = [f for f in findings if f["provider"] != "cross-cloud"]
-    cross      = [f for f in findings if f["provider"] == "cross-cloud"]
+    single     = [f for f in findings if f["provider"] != "cross-cloud"] # Filters findings to keep only those where provider != "cross-cloud".
+    cross      = [f for f in findings if f["provider"] == "cross-cloud"] # Filters findings to keep only those where provider == "cross-cloud".
 
     print(f"  CCSM: {len(single)} single-cloud  +  {len(cross)} cross-cloud")
     return findings
@@ -51,9 +51,9 @@ def run_ccsm():
 def run_checkov():
     print("  Running Checkov...")
     try:
-        result = subprocess.run(
+        result = subprocess.run( # Calls subprocess.run to execute the Checkov CLI command and capture its output.
             f'checkov -f "{LIVE_FILE}" --framework terraform -o json --quiet --compact',
-            capture_output=True, text=True, timeout=120, shell=True
+            capture_output=True, text=True, timeout=120, shell=True 
         )
         output = result.stdout.strip()
         if not output:
@@ -82,15 +82,15 @@ def run_checkov():
                         break
             if end_pos:
                 try:
-                    data = json.loads(output[:end_pos])
+                    data = json.loads(output[:end_pos]) 
                 except json.JSONDecodeError:
                     return []
 
-        if data is None:
+        if data is None: 
             return []
 
-        blocks   = data if isinstance(data, list) else [data]
-        findings = []
+        blocks   = data if isinstance(data, list) else [data] # Ensures blocks is a list: if data is already a list, use it; otherwise wrap it in a list.
+        findings = [] 
         for block in blocks:
             for check in block.get("results", {}).get("failed_checks", []):
                 findings.append({
@@ -122,12 +122,12 @@ def run_tfsec():
             print("  tfsec: no output")
             return []
 
-        json_start = output.find("{")
-        json_end   = output.rfind("}")
+        json_start = output.find("{") # Finds the index of the first `{`, assuming JSON starts there.
+        json_end   = output.rfind("}") # Finds the index of the last `}`, assuming JSON ends there.
         if json_start == -1 or json_end == -1:
             return []
 
-        data     = json.loads(output[json_start:json_end + 1])
+        data     = json.loads(output[json_start:json_end + 1]) # Parses the substring from json_start to json_end + 1 as JSON into a Python object.
         results  = data.get("results") or []
         findings = []
         for r in results:
@@ -158,7 +158,7 @@ def build_html(ccsm_findings, checkov_findings, tfsec_findings):
     cross  = [f for f in ccsm_findings if f["provider"] == "cross-cloud"]
     single = [f for f in ccsm_findings if f["provider"] != "cross-cloud"]
 
-    # ── CCSM cross-cloud finding cards ──────────────────────────
+    # CCSM cross-cloud finding cards 
     cross_cards = ""
     if cross:
         for f in cross:
@@ -184,7 +184,7 @@ def build_html(ccsm_findings, checkov_findings, tfsec_findings):
     else:
         cross_cards = "<p style='color:#666;'>No cross-cloud findings.</p>"
 
-    # ── CCSM single-cloud rows ───────────────────────────────────
+    # CCSM single-cloud rows 
     ccsm_rows = ""
     for f in single:
         bg, col = severity_colors(f.get("severity", "MEDIUM"))
@@ -200,7 +200,7 @@ def build_html(ccsm_findings, checkov_findings, tfsec_findings):
   <td style="padding:8px 12px; font-size:12px;">{f['problem']}</td>
 </tr>"""
 
-    # ── Checkov rows ─────────────────────────────────────────────
+    # Checkov rows 
     checkov_rows = ""
     for f in checkov_findings:
         checkov_rows += f"""
@@ -210,7 +210,7 @@ def build_html(ccsm_findings, checkov_findings, tfsec_findings):
   <td style="padding:8px 12px; font-size:12px;">{f['resource']}</td>
 </tr>"""
 
-    # ── tfsec rows ───────────────────────────────────────────────
+    # tfsec rows 
     tfsec_rows = ""
     for f in tfsec_findings:
         bg, col = severity_colors(f.get("severity", "").upper())
@@ -330,7 +330,7 @@ def build_html(ccsm_findings, checkov_findings, tfsec_findings):
     return html
 
 
-# ── MAIN ────────────────────────────────────────────────────────
+# MAIN 
 
 print()
 print("=" * 55)

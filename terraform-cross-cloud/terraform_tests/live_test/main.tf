@@ -41,13 +41,13 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-# ── Azure Resource Group ─────────────────────────────────
+# Azure Resource Group 
 resource "azurerm_resource_group" "thesis" {
   name     = "rg-thesis-ccsm-test"
   location = "Canada Central"
 }
 
-# ── AWS S3 Bucket — versioning ON ───────────────────────
+# AWS S3 Bucket — versioning ON 
 resource "aws_s3_bucket" "thesis_test" {
   bucket = "thesis-ccsm-${random_id.suffix.hex}"
 
@@ -74,7 +74,7 @@ resource "aws_s3_bucket_public_access_block" "thesis_test" {
   restrict_public_buckets = true
 }
 
-# ── Azure Storage Account — versioning OFF ───────────────
+# Azure Storage Account — versioning OFF 
 # This is the deliberate cross-cloud inconsistency
 # AWS has versioning ON, Azure has it OFF
 resource "azurerm_storage_account" "thesis_test" {
@@ -86,7 +86,7 @@ resource "azurerm_storage_account" "thesis_test" {
 
   # Versioning deliberately disabled to create cross-cloud gap
   blob_properties {
-    versioning_enabled = true
+    versioning_enabled = false
   }
 
   tags = {
@@ -96,7 +96,7 @@ resource "azurerm_storage_account" "thesis_test" {
   }
 }
 
-# ── Outputs ──────────────────────────────────────────────
+# Outputs
 output "aws_bucket_name" {
   description = "The name of the AWS S3 bucket created"
   value       = aws_s3_bucket.thesis_test.bucket

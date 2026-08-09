@@ -23,68 +23,68 @@ from parser import parse_file
 from normaliser import normalise
 from detector import detect
 
-GROUP1_DIR = SCRIPT_DIR.parent / "terraform_tests" / "group1_individual"
+GROUP1_DIR = SCRIPT_DIR.parent / "terraform_tests" / "group1_individual" 
 GROUP2_DIR = SCRIPT_DIR.parent / "terraform_tests" / "group2_crosscloud"
 RESULTS_DIR = SCRIPT_DIR.parent / "results"
 
 
 def run_ccsm_on_file(filepath):
-    resources = parse_file(filepath)
-    normalised = normalise(resources)
-    if not normalised:
+    resources = parse_file(filepath) # Parses the given Terraform file into a structured representation of resources.
+    normalised = normalise(resources) # Normalises the parsed resources into a standardised format suitable for cross-cloud analysis.
+    if not normalised: # Checks if the normalised list is empty (no storage resources found).
         return []
     return detect(normalised)
 
 
 def run_checkov_on_file(filepath):
     try:
-        result = subprocess.run(
+        result = subprocess.run( # Calls `subprocess.run` to execute an external command (Checkov) and capture its output.
             f'checkov -f "{filepath}" --framework terraform -o json --quiet --compact',
-            capture_output=True, text=True, timeout=120, shell=True
+            capture_output=True, text=True, timeout=120, shell=True # Captures stdout and stderr so they can be inspected in Python.
         )
-        output = result.stdout.strip()
+        output = result.stdout.strip() # Strips leading/trailing whitespace from Checkov's standard output.
         if not output:
             return {"total": 0, "aws": 0, "azure": 0}
 
-        json_start = output.find("{")
-        if json_start == -1:
+        json_start = output.find("{") # Finds the index of the first `{` character, assuming JSON starts there.
+        if json_start == -1: 
             return {"total": 0, "aws": 0, "azure": 0}
-        output = output[json_start:]
+        output = output[json_start:] # Trims the output to start from the first `{`, discarding any preceding text.
 
         # Checkov sometimes prints two JSON objects back to back.
         # Count braces to cut off after the first complete object.
         data = None
         try:
-            data = json.loads(output)
+            data = json.loads(output) # If successful, `data` now holds the parsed JSON (single object or list).
         except json.JSONDecodeError:
             depth = 0
             end_pos = 0
-            for i, char in enumerate(output):
+            for i, char in enumerate(output): # Iterates over each character in the output with its index.
                 if char == "{":
-                    depth += 1
+                    depth += 1 # If the character is an opening brace, increment depth.
                 elif char == "}":
-                    depth -= 1
-                    if depth == 0:
+                    depth -= 1 # If the character is a closing brace, decrement depth.
+                    if depth == 0: # When depth returns to zero, the first complete JSON object has ended.
                         end_pos = i + 1
                         break
-            if end_pos > 0:
+            if end_pos > 0: 
                 try:
-                    data = json.loads(output[:end_pos])
+                    data = json.loads(output[:end_pos]) # Parses the substring from start to `end_pos` into a Python object.
                 except json.JSONDecodeError:
                     return {"total": 0, "aws": 0, "azure": 0}
 
-        if data is None:
+        if data is None: #  If data is still None (no successful JSON parse), treat as no findings.
             return {"total": 0, "aws": 0, "azure": 0}
 
-        results_list = data if isinstance(data, list) else [data]
+        results_list = data if isinstance(data, list) else [data] # Ensures results_list is a list: if `data` is already a list, use it; otherwise wrap it in a list.
 
-        failed_checks = []
+        failed_checks = [] # Initialises a list to collect all failed check IDs from Checkov output.
         aws_count = 0
         azure_count = 0
-        for block in results_list:
-            failed = block.get("results", {}).get("failed_checks", [])
+        for block in results_list: # Iterates over each result block (in case Checkov returned multiple objects).
+            failed = block.get("results", {}).get("failed_checks", []) # Extracts the list of failed checks from the nested "results", "failed_checks" structure,
             for check in failed:
-                check_id = check.get("check_id", "")
+                check_id = check.get("check_id", "") # Gets the check_id string.
                 failed_checks.append(check_id)
                 if "aws" in check_id.lower():
                     aws_count += 1
@@ -107,28 +107,28 @@ def run_tfsec_on_file(filepath):
             f'tfsec "{file_dir}" --format json --no-colour',
             capture_output=True, text=True, timeout=120, shell=True
         )
-        output = result.stdout.strip() or result.stderr.strip()
+        output = result.stdout.strip() or result.stderr.strip() # Takes stdout if non-empty; otherwise uses stderr, and strips whitespace.
         if not output:
             return {"total": 0, "aws": 0, "azure": 0}
 
-        json_start = output.find("{")
-        json_end = output.rfind("}")
-        if json_start == -1 or json_end == -1:
+        json_start = output.find("{") # Finds the index of the first `{`, assuming JSON starts there.
+        json_end = output.rfind("}") # Finds the index of the last `}`, assuming JSON ends there.
+        if json_start == -1 or json_end == -1: 
             return {"total": 0, "aws": 0, "azure": 0}
 
-        data = json.loads(output[json_start:json_end + 1])
-        results = data.get("results") or []
+        data = json.loads(output[json_start:json_end + 1]) # Parses the substring from start to `json_end` into a Python object.
+        results = data.get("results") or [] 
 
-        filename = Path(filepath).name
+        filename = Path(filepath).name # Extracts just the filename from the full path.
         aws_count = 0
         azure_count = 0
-        file_results = []
+        file_results = [] # Initialises a list to collect rule IDs relevant to this file.
         for r in results:
             result_file = r.get("location", {}).get("filename", "")
             if filename not in result_file:
                 continue
-            rule_id = r.get("rule_id", "")
-            file_results.append(rule_id)
+            rule_id = r.get("rule_id", "") # Get the rule_id string (e.g., "AWS001", "AZU002") for this finding.
+            file_results.append(rule_id) 
             if "aws" in rule_id.lower():
                 aws_count += 1
             elif "azure" in rule_id.lower():
@@ -142,31 +142,31 @@ def run_tfsec_on_file(filepath):
 
 
 def collect_all_results():
-    all_results = {}
+    all_results = {}   # Initialises an empty dict to hold results keyed by filename.
 
     for group_name, test_dir in [("Group 1", GROUP1_DIR), ("Group 2", GROUP2_DIR)]:
         if not test_dir.exists():
             print(f"\n  WARNING: folder not found: {test_dir}")
             continue
 
-        tf_files = sorted(test_dir.glob("*.tf"))
+        tf_files = sorted(test_dir.glob("*.tf")) # Find all .tf files in the current test directory and sorts them alphabetically.
 
         for tf_file in tf_files:
-            filename = tf_file.name
-            filepath = str(tf_file)
+            filename = tf_file.name # Extract the filename (e.g., "test1.tf").
+            filepath = str(tf_file) # Converts the Path object to a string for passing to scanner functions.
 
             print(f"\n  Scanning: {filename}")
 
             print("    Running CCSM...")
-            ccsm_findings = run_ccsm_on_file(filepath)
-            ccsm_single = [f for f in ccsm_findings if f["provider"] != "cross-cloud"]
-            ccsm_cross = [f for f in ccsm_findings if f["provider"] == "cross-cloud"]
+            ccsm_findings = run_ccsm_on_file(filepath) # Calls the CCSM runner for this file and stores the list of findings.
+            ccsm_single = [f for f in ccsm_findings if f["provider"] != "cross-cloud"] # Filters the findings to keep only those where provider != "cross-cloud".
+            ccsm_cross = [f for f in ccsm_findings if f["provider"] == "cross-cloud"] # Filters the findings to keep only those where provider == "cross-cloud".
 
             print("    Running Checkov...")
-            checkov = run_checkov_on_file(filepath)
+            checkov = run_checkov_on_file(filepath) # Calls the Checkov runner for this file and stores the counts dict.
 
             print("    Running tfsec...")
-            tfsec = run_tfsec_on_file(filepath)
+            tfsec = run_tfsec_on_file(filepath) # Calls the tfsec runner for this file and stores the counts dict.
 
             all_results[filename] = {
                 "group": group_name,
@@ -186,7 +186,7 @@ def collect_all_results():
 
 
 def severity_badge_colors(severity):
-    """Returns (background_color, text_color) for a given severity level."""
+    # Returns background_color, text_color for a given severity level.
     if severity == "HIGH":
         return "#ffebee", "#c62828"
     elif severity == "MEDIUM":
@@ -196,7 +196,7 @@ def severity_badge_colors(severity):
 
 
 def build_html(all_results):
-    files = sorted(all_results.keys())
+    files = sorted(all_results.keys())  # Gets a sorted list of filenames from the results dictionary for consistent ordering.
 
     total_checkov = sum(r["checkov_total"] for r in all_results.values())
     total_tfsec = sum(r["tfsec_total"] for r in all_results.values())
@@ -204,8 +204,8 @@ def build_html(all_results):
     total_ccsm_cross = sum(r["ccsm_cross"] for r in all_results.values())
     total_ccsm = sum(r["ccsm_total"] for r in all_results.values())
 
-    table_rows = ""
-    for filename in files:
+    table_rows = "" # Initialises an empty string to accumulate HTML table row markup.
+    for filename in files: 
         r = all_results[filename]
         short = filename.replace(".tf", "").replace("_", " ")
         cross_bg = "#e8f5e9" if r["ccsm_cross"] > 0 else "#fff"
